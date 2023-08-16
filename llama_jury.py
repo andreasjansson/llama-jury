@@ -66,6 +66,7 @@ class Agent:
             prompt += "The jury is now in deliberation and no further evidence will be presented. You must now examine the evidence and argue your opinion and work towards a conclusive verdict."
         else:
             prompt += "Evidence is being presented and you are forming an opinion."
+        return prompt
 
     def mood_prompt(self):
         return f"Your current mood is: {self.mood}"
@@ -212,7 +213,7 @@ def previous_utterance_prompt(previous_utterance, previous_speaker):
 
 
 def load_transcript():
-    with open("transcript.txt") as f:
+    with open("transcript2.txt") as f:
         text = f.read()
     evidences = text.split("\n\n")
     return evidences
@@ -250,6 +251,12 @@ def print_agents(agents):
     print("\n")
 
 
+def print_box(text):
+    print("********************************")
+    print(text)
+    print("********************************")
+
+
 async def main():
     db.init()
 
@@ -271,7 +278,7 @@ async def main():
 
     transcript = load_transcript()
     for evidence in transcript:
-        print(evidence)
+        print_box(evidence)
         db.save(evidence=evidence)
         async with asyncio.TaskGroup() as tg:
             for agent in agents:
@@ -280,7 +287,7 @@ async def main():
         print_agents(agents)
         db.save(agents=agents)
 
-    print("The jury now goes into deliberation")
+    print_box("The jury now goes into deliberation")
     db.save(evidence="")
 
     previous_utterance = previous_speaker = None
@@ -305,7 +312,7 @@ async def main():
         for a in agents:
             a.latest_sentiment = ""
 
-        print(f"\n{agent.name} says: {utterance}\n")
+        print_box(f"\n{agent.name} says: {utterance}\n")
 
         other_agents = [a for a in agents if a != agent]
         async with asyncio.TaskGroup() as tg:
@@ -319,10 +326,10 @@ async def main():
             if all(a.is_certain() for a in agents):
                 break
 
-    print("The jury has reached it's verdict")
+    print_box("The jury has reached it's verdict")
 
     verdict = await summarize_verdict(agents)
-    print(verdict)
+    print_box(verdict)
     db.save(verdict=verdict)
 
 
