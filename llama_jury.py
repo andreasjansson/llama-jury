@@ -37,10 +37,9 @@ class Agent:
     # Beliefs about the case
     beliefs: str = "No opinions yet."
 
-    # When guilty_percent < 20, they are believed to be innocent
-    # When guilty_percent >= 80, they are believed to be guilty
-    # Otherwise, the agent is unsure
-    guilty_percent: int = 50
+    # When guilty_percent - innocent_percent > 50 (or the other way around) the agent is certain
+    guilty_percent: int = 0
+    innocent_percent: int = 0
 
     # Beliefs about the other people in the jury (name -> sentiment)
     agent_sentiments: Dict[str, str] = field(default_factory=dict)
@@ -76,7 +75,7 @@ class Agent:
 
 Your current opinions and beliefs about the court case are: {self.beliefs}
 
-You are currently {self.guilty_percent}% sure that the defendent is guity."""
+You are currently {self.guilty_percent}% sure that the defendent is guity and {self.innocent_percent}% sure that the defendent is innocent."""
 
     def agent_sentiments_prompt(self):
         prompt = "Your current opinions about your fellow jury members are:\n"
@@ -117,24 +116,26 @@ Only base your opinion on their superficial appearence and mannerisms. Respond i
                 ("MOOD", str),
                 ("BELIEFS", str),
                 ("GUILTY_PERCENT", fuzzy_percent),
+                ("INNOCENT_PERCENT", fuzzy_percent),
             ]
 
             prompt += f"""The court says: {utterance}
 
-Describe your updated case summary (detailed), mood (one or two words), beliefs (reasoned), and certainty of guilt in the following format:
+Describe your updated case summary (detailed), mood (one or two words), beliefs (reasoned), and certainty of guilt and innocence (percentages) in the following format:
 """
         else:
             prompt += f"""{self.agent_sentiments_prompt()}
 
 {speaker.name} says: {utterance}
 
-You are {self.description}, describe your updated mood (one word), updated beliefs, updated certainty of guilt (percentage), and updated opinion about the speaker {speaker.name} in the following format (do not output anything else):
+You are {self.description}, describe your updated mood (one word), updated beliefs, updated certainty of guilt and innocence (percentages), and updated opinion about the speaker {speaker.name} in the following format (do not output anything else):
 """
             opinion_key = "OPINION_ABOUT_" + re.sub(r"[^A-Z]", "", speaker.name.upper().replace(" ", "_"))
             response_fields = [
                 ("MOOD", str),
                 ("BELIEFS", str),
                 ("GUILTY_PERCENT", fuzzy_percent),
+                ("INNOCENT_PERCENT", fuzzy_percent),
                 (opinion_key, str),
             ]
 
@@ -145,6 +146,7 @@ You are {self.description}, describe your updated mood (one word), updated belie
             self.mood = parsed["MOOD"]
             self.beliefs = parsed["BELIEFS"]
             self.guilty_percent = parsed["GUILTY_PERCENT"]
+            self.innocent_percent = parsed["INNOCENT_PERCENT"]
             if speaker is None:
                 self.summary = parsed["SUMMARY"]
             else:
@@ -203,7 +205,7 @@ You are {self.description}, what do you say? Try to drive the discussion forward
         return utterence
 
     def is_certain(self):
-        return self.guilty_percent < 20 or self.guilty_percent >= 80
+        return abs(self.guilty_percent - self.innocent_percent) > 50
 
 
 def previous_utterance_prompt(previous_utterance, previous_speaker):
@@ -220,10 +222,11 @@ def load_transcript():
 
 
 async def summarize_verdict(agents):
-    num_guilty = len([a.guilty_percent > 50 for a in agents])
-    if num_guilty < len(agents) / 2:
+    num_guilty = len([a.guilty_percent - a.innocent_percent > 50 for a in agents])
+    num_innocent = len([a.innocent_percent - a.guilty_percent > 50 for a in agents])
+    if num_innocent > num_guilty:
         verdict = "Not guilty"
-    elif num_guilty > len(agents) / 2:
+    elif num_guilty > num_innocent:
         verdict = "Guilty"
     else:
         verdict = "Undecided"
@@ -244,6 +247,7 @@ def print_agents(agents):
         print(f"* Case summary:  {agent.summary}")
         print(f"* Case beliefs:  {agent.beliefs}")
         print(f"* Guilty %:      {agent.guilty_percent}")
+        print(f"* Innocent %:    {agent.innocent_percent}")
         print(f"* Mood:          {agent.mood}")
         print("* Jury opinions:")
         for name, sentiment in agent.agent_sentiments.items():
