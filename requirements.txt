@@ -1,0 +1,3 @@
+replicate==0.11.0
+python-dotenv==1.0.0
+supabase==1.0.4
