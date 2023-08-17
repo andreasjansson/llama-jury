@@ -14,7 +14,7 @@ def make_image_sync(prompt, attempt=0) -> str:
     try:
         output = replicate.run(
             "stability-ai/sdxl:a00d0b7dcbb9c3fbb34ba87d2d5b46c56969c84a628bf778a7fdaec30b1b99c5",
-            input={"prompt": prompt, "width": 512, "height": 1024},
+            input={"prompt": prompt, "negative_prompt": "collage", "width": 512, "height": 1024},
         )
         return output[0]
     except replicate.exceptions.ModelError:

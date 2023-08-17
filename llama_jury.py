@@ -71,7 +71,7 @@ class Agent:
         return f"Your current mood is: {self.mood}"
 
     def beliefs_prompt(self):
-        return f"""A summary of the case: {self.summary}
+        return f"""Summary of the facts of case: {self.summary}
 
 Your current opinions and beliefs about the court case are: {self.beliefs}
 
@@ -121,7 +121,7 @@ Only base your opinion on their superficial appearence and mannerisms. Respond i
 
             prompt += f"""The court says: {utterance}
 
-Describe your updated case summary (detailed), mood (one or two words), beliefs (reasoned), and certainty of guilt and innocence (percentages) in the following format:
+Describe your updated summary of the facts of the case (detailed), mood (one or two words), beliefs (reasoned), and certainty of guilt and innocence (percentages) in the following format:
 """
         else:
             prompt += f"""{self.agent_sentiments_prompt()}
@@ -199,7 +199,7 @@ How eager are you to speak? Reply as a percentage in the following format:
 
 {previous_utterance_prompt(previous_utterance, previous_speaker)}
 
-You are {self.description}, what do you say? Try to drive the discussion forward towards a verdict. Only respond with the thing you're saying.
+You are {self.description}, what do you say? Be concise and drive the discussion forward towards a verdict. Only respond with the thing you're saying.
 """
         utterance = await gen(prompt)
         return utterance
