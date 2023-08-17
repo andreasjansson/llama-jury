@@ -53,8 +53,8 @@ class Agent:
     # Latest opinion about someone in response to their last utterance. Used in UI.
     latest_sentiment: str = ""
 
-    # Latest utterence
-    latest_utterence: str = ""
+    # Latest utterance
+    latest_utterance: str = ""
 
     # Used in UI
     image_uri: str = ""
@@ -201,8 +201,8 @@ How eager are you to speak? Reply as a percentage in the following format:
 
 You are {self.description}, what do you say? Try to drive the discussion forward towards a verdict. Only respond with the thing you're saying.
 """
-        utterence = await gen(prompt)
-        return utterence
+        utterance = await gen(prompt)
+        return utterance
 
     def is_certain(self):
         return abs(self.guilty_percent - self.innocent_percent) > 50
@@ -306,8 +306,8 @@ async def main():
 
         utterance = await agent.say(is_in_deliberation=True, previous_utterance=previous_utterance, previous_speaker=previous_speaker)
         if previous_speaker:
-            previous_speaker.latest_utterence = ""
-        agent.latest_utterence = utterance
+            previous_speaker.latest_utterance = ""
+        agent.latest_utterance = utterance
         db.save(agents=agents)
 
         previous_utterance = utterance
