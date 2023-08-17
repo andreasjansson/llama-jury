@@ -308,13 +308,12 @@ async def main():
         if previous_speaker:
             previous_speaker.latest_utterance = ""
         agent.latest_utterance = utterance
+        for a in agents:
+            a.latest_sentiment = ""
         db.save(agents=agents)
 
         previous_utterance = utterance
         previous_speaker = agent
-
-        for a in agents:
-            a.latest_sentiment = ""
 
         print_box(f"\n{agent.name} says: {utterance}\n")
 
