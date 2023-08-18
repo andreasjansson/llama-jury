@@ -13,7 +13,6 @@ Prosecutor: Mrs. Appleton, can you please state your relationship with the defen
 Mrs. Appleton: I don't really know him. I just noticed my gnomes were missing, and then I saw him on the news with a bunch of gnomes in his yard.
 Prosecutor: Did you identify any of the gnomes as yours?
 Mrs. Appleton: Well, there was one that looked a bit like mine, but I couldn't be sure.
-
 Defense Attorney: Mrs. Appleton, is it possible you could have mistaken someone else's gnome for your own?
 Mrs. Appleton: I suppose, but it was a very specific gnome. It looked just like the one my late husband gave me.
 
@@ -22,7 +21,6 @@ Defense Attorney: Mr. Thomas, how well do you know the defendant?
 Mr. Thomas: I've known Stan for about 15 years. We're neighbors and good friends.
 Defense Attorney: Are you aware of Mr. Huddleston's gnome collection?
 Mr. Thomas: Of course, I've even helped him unload some from his car. He's always shopping for gnomes online.
-
 Prosecutor: Mr. Thomas, isn't it possible that the defendant could have taken these gnomes without your knowledge?
 Mr. Thomas: I suppose it's possible, but I've never seen him do anything like that. He's a good guy.
 

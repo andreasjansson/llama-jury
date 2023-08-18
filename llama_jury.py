@@ -17,7 +17,7 @@ import db
 from sd import make_image
 
 CHARACTERS = {
-    "Aristotle": "The philosopher Aristotle",
+    "Aristotle": "The ancient Greek philosopher Aristotle",
     "Homer Simpson": "The funny but slightly dumb cartoon character Homer Simpson",
     "Agatha Christie": "The detective story author Agatha Christie",
     "Nikola Tesla": "The mad scientist polymath Nikola Tesla",
@@ -38,8 +38,8 @@ class Agent:
     beliefs: str = "No opinions yet."
 
     # When guilty_percent - innocent_percent > 50 (or the other way around) the agent is certain
-    guilty_percent: int = 0
-    innocent_percent: int = 0
+    guilty_percent: int = 50
+    innocent_percent: int = 50
 
     # Beliefs about the other people in the jury (name -> sentiment)
     agent_sentiments: Dict[str, str] = field(default_factory=dict)
@@ -71,7 +71,7 @@ class Agent:
         return f"Your current mood is: {self.mood}"
 
     def beliefs_prompt(self):
-        return f"""Summary of the facts of case: {self.summary}
+        return f"""Summary of the evidence: {self.summary}
 
 Your current opinions and beliefs about the court case are: {self.beliefs}
 
@@ -121,14 +121,14 @@ Only base your opinion on their superficial appearence and mannerisms. Respond i
 
             prompt += f"""The court says: {utterance}
 
-Describe your updated summary of the facts of the case (detailed), mood (one or two words), beliefs (reasoned), and certainty of guilt and innocence (percentages) in the following format:
+You are {self.description}, describe your updated summary of all evidence (detailed), mood (one or two words), beliefs (reasoned and detailed), and certainty of guilt and innocence (percentages) in the following format:
 """
         else:
             prompt += f"""{self.agent_sentiments_prompt()}
 
 {speaker.name} says: {utterance}
 
-You are {self.description}, describe your updated mood (one word), updated beliefs, updated certainty of guilt and innocence (percentages), and updated opinion about the speaker {speaker.name} in the following format (do not output anything else):
+You are {self.description}, given your current beliefs and what {speaker.name} said, describe your updated mood (one word), updated beliefs (reasoned and detailed), updated certainty of guilt and innocence (percentages), and updated opinion about the speaker {speaker.name} in the following format (do not output anything else):
 """
             opinion_key = "OPINION_ABOUT_" + re.sub(r"[^A-Z]", "", speaker.name.upper().replace(" ", "_"))
             response_fields = [
@@ -199,9 +199,10 @@ How eager are you to speak? Reply as a percentage in the following format:
 
 {previous_utterance_prompt(previous_utterance, previous_speaker)}
 
-You are {self.description}, what do you say? Be concise and drive the discussion forward towards a verdict. Only respond with the thing you're saying.
+You are {self.description}, what do you say? Be very concise and brief and argue based on known evidence and your beliefs. Only respond with the thing you're saying.
 """
         utterance = await gen(prompt)
+        utterance = utterance.strip('"')
         return utterance
 
     def is_certain(self):
@@ -222,8 +223,8 @@ def load_transcript():
 
 
 async def summarize_verdict(agents):
-    num_guilty = len([a.guilty_percent - a.innocent_percent > 50 for a in agents])
-    num_innocent = len([a.innocent_percent - a.guilty_percent > 50 for a in agents])
+    num_guilty = len([a for a in agents if a.guilty_percent - a.innocent_percent > 50])
+    num_innocent = len([a for a in agents if a.innocent_percent - a.guilty_percent > 50])
     if num_innocent > num_guilty:
         verdict = "Not guilty"
     elif num_guilty > num_innocent:
@@ -332,6 +333,11 @@ async def main():
     print_box("The jury has reached it's verdict")
 
     verdict = await summarize_verdict(agents)
+
+    for a in agents:
+        a.latest_utterance = ""
+        a.latest_sentiment = ""
+
     print_box(verdict)
     db.save(verdict=verdict)
 
