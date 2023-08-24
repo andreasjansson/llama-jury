@@ -198,7 +198,7 @@ How eager are you to speak? Reply as a percentage in the following format:
 {self.previous_utterance_prompt(previous_utterance, previous_speaker)}
 """
         if previous_speaker:
-            prompt += f"You are {self.description}, reply to {previous_speaker.name} in a short sentence in your distinctive voice. Argue for your beliefs mentioning specific evidence."
+            prompt += f"You are {self.description}, reply to {previous_speaker.name} in your distinctive voice. Argue for your beliefs mentioning specific evidence in one short sentence."
         else:
             prompt += f"You are {self.description}. Try to convince the jury about your opinions in your distinctive voice. Be brief (one or two sentences). Argue for your beliefs mentioning specific evidence."
 
