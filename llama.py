@@ -34,9 +34,6 @@ def gen_sync(prompt, *, attempt=0) -> str:
             return ""
         return gen_sync(prompt, attempt=attempt + 1)
 
-    prompt_prefix = re.sub(r"[^a-z0-9 ]", "", prompt.lower()[:20])
-    with open(f"logs/{time.time_ns()}.{prompt_prefix}.log", "w") as f:
-        f.write(prompt + "\n\n--------------------\n\n" + output)
     return output
 
 

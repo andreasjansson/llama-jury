@@ -19,7 +19,4 @@ async def generate(prompt) -> str:
         stream=False,
     )
     output = response["choices"][0]["message"]["content"]
-    prompt_prefix = re.sub(r"[^a-z0-9 ]", "", prompt.lower()[:20])
-    with open(f"logs/{time.time_ns()}.{prompt_prefix}.log", "w") as f:
-        f.write(prompt + "\n\n--------------------\n\n" + output)
     return output
