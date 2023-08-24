@@ -2,15 +2,14 @@ import sys
 import dataclasses
 import os
 from supabase import create_client
-from dotenv import load_dotenv
 
 client = None
 case_id = None
 
+
 def init(room):
     global client, case_id
 
-    load_dotenv()
     if "SUPABASE_URL" not in os.environ:
         sys.stderr.write("No SUPABASE_URL provided, won't save to database\n")
         return
@@ -30,10 +29,16 @@ def save(room, agents=None, evidence=None, verdict=None):
         state = []
         for a in agents:
             state.append(dataclasses.asdict(a))
-        client.table('agents_state').insert({"case_id": case_id, "state": state, "room": room}).execute()
+        client.table("agents_state").insert(
+            {"case_id": case_id, "state": state, "room": room}
+        ).execute()
 
     if evidence is not None:
-        client.table("evidence").insert({"case_id": case_id, "text": evidence, "room": room}).execute()
+        client.table("evidence").insert(
+            {"case_id": case_id, "text": evidence, "room": room}
+        ).execute()
 
     if verdict is not None:
-        client.table("verdict").insert({"case_id": case_id, "text": verdict, "room": room}).execute()
+        client.table("verdict").insert(
+            {"case_id": case_id, "text": verdict, "room": room}
+        ).execute()

@@ -1,5 +1,4 @@
 import argparse
-import os
 import re
 import sys
 from typing import Optional
@@ -8,6 +7,11 @@ import itertools
 from dataclasses import dataclass, field
 import random
 from typing import Dict
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 from llama import (
     gen,
@@ -256,7 +260,8 @@ async def generate_transcript():
         example_transcript1 = f.read()
     with open("transcript2.txt") as f:
         example_transcript2 = f.read()
-    transcript = await gpt.generate(f"""Generate a fictional court case. The suspected crime should be something a bit funny and not violent. Not too cutesy though. Generate a court transcript where the attorney and the prosecutor both interrogate witnesses. Make the outcome of the case somewhat ambiguous. Include opening and closing statements by both attorney and prosecutor. Start with a name for the case and the name of the defendant. Make everything as short as possible.
+    transcript = await gpt.generate(
+        f"""Generate a fictional court case. The suspected crime should be something a bit funny and not violent. Not too cutesy though. Generate a court transcript where the attorney and the prosecutor both interrogate witnesses. Make the outcome of the case somewhat ambiguous. Include opening and closing statements by both attorney and prosecutor. Start with a name for the case and the name of the defendant. Make everything as short as possible.
 
 Split the transcript into blocks of 2-5 lines each, separated by newlines. Below are two examples of the form (but don't use the content of the examples, instead invent new stories):
 
@@ -267,7 +272,8 @@ Example transcript 1:
 Example transcript 2:
 
 {example_transcript2}
-""")
+"""
+    )
     return transcript.split("\n\n")
 
 
@@ -315,7 +321,9 @@ def print_box(text):
 
 async def main():
     parser = argparse.ArgumentParser(description="Llama Jury")
-    parser.add_argument("room", help="Name of the court room", choices=["A", "B", "C", "D"])
+    parser.add_argument(
+        "room", help="Name of the court room", choices=["A", "B", "C", "D"]
+    )
     args = parser.parse_args()
     room = args.room
     db.init(room)
