@@ -239,7 +239,7 @@ How eager are you to speak? Reply as a percentage in the following format:
         if previous_speaker:
             prompt += f"You are {self.description}, reply to {previous_speaker.name} with a single sentence statement. Refer to what you know and believe."
         else:
-            prompt += f"You are {self.description}. Try to convince the jury about your opinions. Refer to what you know and believe."
+            prompt += f"You are {self.description}. Try to convince the jury about your opinions. Be brief (one or two sentences). Refer to what you know and believe."
 
         utterance = await gen(prompt)
         utterance = utterance.strip('"')
