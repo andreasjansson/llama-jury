@@ -61,9 +61,11 @@ class Agent:
         return f"Your current mood is: {self.mood}"
 
     def beliefs_prompt(self):
-        return f"""Summary of the evidence: {self.summary}
+        return f"""This is the evidence for and against the defendant:
+{self.summary}
 
-Your current opinions and beliefs about the court case are: {self.beliefs}
+Your current opinions and beliefs about the case are:
+{self.beliefs}
 
 You are currently {self.guilty_percent}% sure that the defendant is guilty and {self.innocent_percent}% sure that the defendant is innocent."""
 
@@ -196,9 +198,9 @@ How eager are you to speak? Reply as a percentage in the following format:
 {self.previous_utterance_prompt(previous_utterance, previous_speaker)}
 """
         if previous_speaker:
-            prompt += f"You are {self.description}, reply to {previous_speaker.name} with a single sentence statement. Refer to what you know and believe."
+            prompt += f"You are {self.description}, reply to {previous_speaker.name} in a short sentence in your distinctive voice. Argue for your beliefs mentioning specific evidence."
         else:
-            prompt += f"You are {self.description}. Try to convince the jury about your opinions. Be brief (one or two sentences). Refer to what you know and believe."
+            prompt += f"You are {self.description}. Try to convince the jury about your opinions in your distinctive voice. Be brief (one or two sentences). Argue for your beliefs mentioning specific evidence."
 
         utterance = await gen(prompt)
         utterance = utterance.strip('"')
