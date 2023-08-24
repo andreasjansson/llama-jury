@@ -20,7 +20,7 @@ from llama import (
     fuzzy_percent,
 )
 import gpt
-import db
+from db import DatabaseSession
 from sd import make_image
 
 ROOM_CHARACTERS = {
@@ -322,11 +322,21 @@ def print_box(text):
 async def main():
     parser = argparse.ArgumentParser(description="Llama Jury")
     parser.add_argument(
-        "room", help="Name of the court room", choices=["A", "B", "C", "D"]
+        "rooms",
+        help="Names of the court rooms",
+        choices=["A", "B", "C", "D"],
+        nargs="+",
     )
     args = parser.parse_args()
-    room = args.room
-    db.init(room)
+    rooms = args.rooms
+
+    async with asyncio.TaskGroup() as tg:
+        for room in rooms:
+            tg.create_task(run_court(room))
+
+
+async def run_court(room):
+    db = DatabaseSession(room)
 
     characters = ROOM_CHARACTERS[room]
     agents = [Agent(name, description) for name, description in characters.items()]

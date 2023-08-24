@@ -1,10 +1,11 @@
-import os
-import time
 import asyncio
 import re
 from typing import List, Tuple, Optional, Dict, Any
-
 import replicate
+
+from monkey_patch_replicate import monkey_patch_replicate
+monkey_patch_replicate(replicate)
+
 
 MAX_ATTEMPTS = 8
 
