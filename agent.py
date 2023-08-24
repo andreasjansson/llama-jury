@@ -1,3 +1,4 @@
+import random
 import re
 import sys
 from typing import Optional
@@ -64,7 +65,7 @@ class Agent:
 
 Your current opinions and beliefs about the court case are: {self.beliefs}
 
-You are currently {self.guilty_percent}% sure that the defendent is guity and {self.innocent_percent}% sure that the defendent is innocent."""
+You are currently {self.guilty_percent}% sure that the defendent is guilty and {self.innocent_percent}% sure that the defendent is innocent."""
 
     def agent_sentiments_prompt(self):
         prompt = "Your current opinions about your fellow jury members are:\n"
@@ -99,20 +100,21 @@ Only base your opinion on their superficial appearence and mannerisms. Respond i
 {self.mood_prompt()}
 
 """
+        beliefs_key = self.name_key() + "_BELIEFS"
         if speaker is None:
             response_fields = [
-                ("SUMMARY", str),
+                ("FACTUAL_SUMMARY", str),
                 ("MOOD", str),
-                ("BELIEFS", str),
-                ("GUILTY_PERCENT", fuzzy_percent),
-                ("INNOCENT_PERCENT", fuzzy_percent),
+                (beliefs_key, str),
+                ("GUILTY_PERCENTAGE", fuzzy_percent),
+                ("INNOCENT_PERCENTAGE", fuzzy_percent),
             ]
 
             prompt += f"""{self.beliefs_prompt()}
 
 The court says: {utterance}
 
-You are {self.description}, in the signature voice of {self.name}, describe your updated summary of all evidence (detailed), mood (one word), beliefs (several bullet points), and certainty of guilt and innocence (percentages) in the following format:
+You are {self.description}, in your own distinctive tone of voice, describe your updated summary of all evidence (factual bullet points), mood (one word), beliefs (several bullet points in the voice of {self.name}), and certainty of guilt and innocence (percentages) in the following format::
 """
         else:
             prompt += f"""{self.agent_sentiments_prompt()}
@@ -121,16 +123,14 @@ You are {self.description}, in the signature voice of {self.name}, describe your
 
 {speaker.name} says: {utterance}
 
-You are {self.description}, given your previous beliefs and what {speaker.name} said, in the signature voice of {self.description}, describe your updated mood (one word), new beliefs (several bullet points), updated certainty of guilt and innocence (percentages), and updated opinion about the speaker {speaker.name}'s views in relation to your own beliefs (concise) in the following format (do not output anything else):
+You are {self.description}, given your previous beliefs and what {speaker.name} said, in your own distinctive voice, describe your updated mood (one word), new beliefs (several bullet points in the voice of {self.name}), updated certainty of guilt and innocence (percentages), and updated opinion about the speaker {speaker.name}'s views in relation to your own beliefs (concise) in the following format (do not output anything else):
 """
-            opinion_key = "OPINION_ABOUT_" + re.sub(
-                r"[^A-Z ]", "", speaker.name.upper().replace(" ", "_")
-            )
+            opinion_key = "OPINION_ABOUT_" + speaker.name_key()
             response_fields = [
                 ("MOOD", str),
-                ("BELIEFS", str),
-                ("GUILTY_PERCENT", fuzzy_percent),
-                ("INNOCENT_PERCENT", fuzzy_percent),
+                (beliefs_key, str),
+                ("GUILTY_PERCENTAGE", fuzzy_percent),
+                ("INNOCENT_PERCENTAGE", fuzzy_percent),
                 (opinion_key, str),
             ]
 
@@ -139,11 +139,11 @@ You are {self.description}, given your previous beliefs and what {speaker.name} 
         old_mood = self.mood
         if parsed:
             self.mood = parsed["MOOD"]
-            self.beliefs = parsed["BELIEFS"]
-            self.guilty_percent = parsed["GUILTY_PERCENT"]
-            self.innocent_percent = parsed["INNOCENT_PERCENT"]
+            self.beliefs = parsed[beliefs_key]
+            self.guilty_percent = parsed["GUILTY_PERCENTAGE"]
+            self.innocent_percent = parsed["INNOCENT_PERCENTAGE"]
             if speaker is None:
-                self.summary = parsed["SUMMARY"]
+                self.summary = parsed["FACTUAL_SUMMARY"]
             else:
                 self.agent_sentiments[speaker.name] = parsed[opinion_key]
                 self.latest_sentiment = parsed[opinion_key]
@@ -210,3 +210,6 @@ How eager are you to speak? Reply as a percentage in the following format:
         if previous_utterance:
             return f"Previously {previous_speaker.name} said: {previous_utterance}"
         return ""
+
+    def name_key(self):
+        return re.sub(r"[^A-Z_]", "", self.name.upper().replace(" ", "_"))

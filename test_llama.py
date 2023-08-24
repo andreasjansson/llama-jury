@@ -22,6 +22,7 @@ GUILTY_PERCENT:
     assert parsed["BELIEFS"] == """i believe i can fly
 
 i believe i can touch the sky"""
+    assert parsed["GUILTY_PERCENT"] == 10
 
     parsed = parse_formatted_response("""foo bar
 
@@ -68,6 +69,29 @@ GUILTY_PERCENT: 60% (increased from 50%). My instincts tell me that Jenkins is g
     assert parsed["MOOD"] == "Grumpier than usual. I do not enjoy being stuck in this dull, pointless courtroom all day. I miss the thrill of battle and the fresh air of Qo'noS."
     assert parsed["BELIEFS"] == "This Human, Jerry Jenkins, looks like a scoundrel. He smells like one too. I can practically sense the stench of his illegal activities wafting through the air. His eyes are too wide and his voice is too loud - he's clearly hiding something. But... (pauses) ...I am not convinced that the prosecution has presented enough evidence to prove their case beyond a reasonable doubt. There are too many holes in their argument, too much room for doubt."
     assert parsed["GUILTY_PERCENT"] == 60
+
+    parsed = parse_formatted_response("""foo bar
+
+MOOD:
+
+i am happy
+
+BELIEFS:
+
+i believe i can fly
+
+i believe i can touch the sky
+GUILTY PERCENT:
+
+10
+""", [("MOOD", str), ("BELIEFS", str), ("GUILTY_PERCENT", int)])
+
+    assert parsed is not None
+    assert parsed["MOOD"] == "i am happy"
+    assert parsed["BELIEFS"] == """i believe i can fly
+
+i believe i can touch the sky"""
+    assert parsed["GUILTY_PERCENT"] == 10
 
 
 def test_response_format_prompt():

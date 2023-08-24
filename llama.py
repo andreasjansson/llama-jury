@@ -4,6 +4,7 @@ from typing import List, Tuple, Optional, Dict, Any
 import replicate
 
 from monkey_patch_replicate import monkey_patch_replicate
+
 monkey_patch_replicate(replicate)
 
 
@@ -21,7 +22,7 @@ def gen_sync(prompt, *, attempt=0) -> str:
         output = replicate.run(
             "a16z-infra/llama-2-13b-chat:2a7f981751ec7fdf87b5b91ad4db53683a98082e9ff7bfd12c8cd5ea85980a52",
             # "replicate/llama-2-70b-chat:58d078176e02c219e11eb4da5a02a7830a283b14cf8f94537af893ccff5ee781",
-        input={"prompt": prompt, "system_prompt": "", "temperature": 1.1},
+            input={"prompt": prompt, "system_prompt": "", "temperature": 1.1},
         )
         output = "".join(list(output)).strip()
     except Exception:
@@ -44,16 +45,20 @@ async def gen_formatted_response(prompt, response_fields):
         parsed = parse_formatted_response(output, response_fields)
         if parsed is not None:
             return parsed
+        print("Failed to parse:\n" + output)
     return None
 
 
 def parse_formatted_response(
-    text: str, fields: List[Tuple[str, type]]
+    text: str, fields: List[Tuple[str, Any]]
 ) -> Optional[Dict[str, Any]]:
     parsed_data = {}
     for field, data_type in fields:
+        # Replace underscores with a regex pattern that will match either a space or an underscore
+        field_pattern = field.replace("_", "[_ ]")
+
         # Use regular expressions to find the data associated with each field
-        pattern = rf"{field}:(?:\n )*(.*?)($|\n(?=[A-Z_]+:|\Z))"
+        pattern = rf"{field_pattern}:(?:\n )*(.*?)($|\n(?=[A-Z_ ]+:|\Z))"
         match = re.search(pattern, text, re.DOTALL)
         if match:
             # If the field is found, attempt to cast it to the specified data type
@@ -63,7 +68,6 @@ def parse_formatted_response(
                 return None
         else:
             return None
-
     return parsed_data
 
 
