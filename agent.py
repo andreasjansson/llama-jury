@@ -65,7 +65,7 @@ class Agent:
 
 Your current opinions and beliefs about the court case are: {self.beliefs}
 
-You are currently {self.guilty_percent}% sure that the defendent is guilty and {self.innocent_percent}% sure that the defendent is innocent."""
+You are currently {self.guilty_percent}% sure that the defendant is guilty and {self.innocent_percent}% sure that the defendant is innocent."""
 
     def agent_sentiments_prompt(self):
         prompt = "Your current opinions about your fellow jury members are:\n"
@@ -112,9 +112,10 @@ Only base your opinion on their superficial appearence and mannerisms. Respond i
 
             prompt += f"""{self.beliefs_prompt()}
 
-The court says: {utterance}
+The court says:
+{utterance}
 
-You are {self.description}, in your own distinctive tone of voice, describe your updated summary of all evidence (factual bullet points), mood (one word), beliefs (several bullet points in the voice of {self.name}), and certainty of guilt and innocence (percentages) in the following format::
+You are {self.description}, in your own distinctive tone of voice, describe your updated summary of what the court has said so far (factual bullet points only), mood (one word), beliefs (several bullet points in the voice of {self.name}), and certainty of guilt and innocence (percentages) in the following format::
 """
         else:
             prompt += f"""{self.agent_sentiments_prompt()}
