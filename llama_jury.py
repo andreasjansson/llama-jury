@@ -231,9 +231,12 @@ How eager are you to speak? Reply as a percentage in the following format:
 {self.beliefs_prompt()}
 
 {previous_utterance_prompt(previous_utterance, previous_speaker)}
-
-You are {self.description}, what do you say? Be very concise and brief (a single sentence) and argue your opinion supported by known evidence. Only respond with the thing you're saying.
 """
+        if previous_speaker:
+            prompt += f"You are {self.description}, reply to {previous_speaker.name} with a single sentence statement. Refer to what you know and believe."
+        else:
+            prompt += f"You are {self.description}. Try to convince the jury about your opinions. Refer to what you know and believe."
+
         utterance = await gen(prompt)
         utterance = utterance.strip('"')
         return utterance
