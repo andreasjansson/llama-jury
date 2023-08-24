@@ -9,44 +9,31 @@ import replicate
 MAX_ATTEMPTS = 8
 
 
-# GPT-4 keeps saying "Can't answer as I am an AI language model and do not have personal experiences or emotions"
-async def gen_gpt(prompt) -> str:
-    import openai
-
-    openai.api_key = os.environ["OPENAI_API_KEY"]
-    response = await openai.ChatCompletion.acreate(
-        model="gpt-3.5-turbo",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-        n=1,
-        stop=None,
-        temperature=0.7,
-        stream=False,
-    )
-    output = response["choices"][0]["message"]["content"]
-    prompt_prefix = re.sub(r"[^a-z0-9 ]", "", prompt.lower()[:20])
-    with open(f"logs/{time.time_ns()}.{prompt_prefix}.log", "w") as f:
-        f.write(prompt + "\n\n--------------------\n\n" + output)
-    return output
-
-
 async def gen(prompt) -> str:
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(None, gen_sync, prompt)
     return result
 
 
-def gen_sync(prompt) -> str:
-    output = replicate.run(
-        "a16z-infra/llama-2-13b-chat:2a7f981751ec7fdf87b5b91ad4db53683a98082e9ff7bfd12c8cd5ea85980a52",
-        # "replicate/llama-2-70b-chat:58d078176e02c219e11eb4da5a02a7830a283b14cf8f94537af893ccff5ee781",
-        input={"prompt": prompt, "system_prompt": ""},
-    )
-    output = "".join(list(output)).strip()
+def gen_sync(prompt, *, attempt=0) -> str:
+    try:
+        output = replicate.run(
+            "a16z-infra/llama-2-13b-chat:2a7f981751ec7fdf87b5b91ad4db53683a98082e9ff7bfd12c8cd5ea85980a52",
+            # "replicate/llama-2-70b-chat:58d078176e02c219e11eb4da5a02a7830a283b14cf8f94537af893ccff5ee781",
+        input={"prompt": prompt, "system_prompt": "", "temperature": 1.1},
+        )
+        output = "".join(list(output)).strip()
+    except Exception:
+        if attempt > 3:
+            raise
+        return gen_sync(prompt, attempt=attempt + 1)
+
+    # Catch "as a language model", etc.
+    if " AI " in output or "language model" in output.lower():
+        if attempt > 5:
+            return ""
+        return gen_sync(prompt, attempt=attempt + 1)
+
     prompt_prefix = re.sub(r"[^a-z0-9 ]", "", prompt.lower()[:20])
     with open(f"logs/{time.time_ns()}.{prompt_prefix}.log", "w") as f:
         f.write(prompt + "\n\n--------------------\n\n" + output)

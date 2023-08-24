@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 client = None
 case_id = None
 
-def init():
+def init(room):
     global client, case_id
 
     load_dotenv()
@@ -17,11 +17,12 @@ def init():
 
     client = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_API_KEY"])
 
-    row = client.table("case").insert({}).execute()
+    row = client.table("case").insert({"room": room}).execute()
     case_id = row.data[0]["id"]
+    print(f"Starting case {case_id} in room {room}")
 
 
-def save(agents=None, evidence=None, verdict=None):
+def save(room, agents=None, evidence=None, verdict=None):
     if client is None:
         return
 
@@ -29,10 +30,10 @@ def save(agents=None, evidence=None, verdict=None):
         state = []
         for a in agents:
             state.append(dataclasses.asdict(a))
-        client.table('agents_state').insert({"case_id": case_id, "state": state}).execute()
+        client.table('agents_state').insert({"case_id": case_id, "state": state, "room": room}).execute()
 
     if evidence is not None:
-        client.table("evidence").insert({"case_id": case_id, "text": evidence}).execute()
+        client.table("evidence").insert({"case_id": case_id, "text": evidence, "room": room}).execute()
 
     if verdict is not None:
-        row = client.table("case").update({"verdict": verdict}).eq("id", case_id).execute()
+        client.table("verdict").insert({"case_id": case_id, "text": verdict, "room": room}).execute()

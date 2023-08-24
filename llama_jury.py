@@ -1,3 +1,5 @@
+import argparse
+import os
 import re
 import sys
 from typing import Optional
@@ -13,17 +15,40 @@ from llama import (
     response_format_prompt,
     fuzzy_percent,
 )
+import gpt
 import db
 from sd import make_image
 
-CHARACTERS = {
-    "Aristotle": "The ancient Greek philosopher Aristotle",
-    "Homer Simpson": "The funny but slightly dumb cartoon character Homer Simpson",
-    "Agatha Christie": "The detective story author Agatha Christie",
-    "Nikola Tesla": "The mad scientist polymath Nikola Tesla",
-    "Dana Scully": "The intelligent, resourceful, and skeptical FBI agent Dana Scully",
-    "Liutentant Worf": "The Klingon Lieutenant Worf from Star Trek TNG",
+ROOM_CHARACTERS = {
+    "A": {
+        "Aristotle": "The ancient Greek philosopher Aristotle",
+        "Homer Simpson": "The funny but slightly dumb cartoon character Homer Simpson",
+        "Agatha Christie": "The detective story author Agatha Christie",
+        "Nikola Tesla": "The mad scientist polymath Nikola Tesla",
+        "Dana Scully": "The intelligent, resourceful, and skeptical FBI agent Dana Scully",
+        "Liutentant Worf": "The Klingon Lieutenant Worf from Star Trek TNG",
+    },
+    "B": {
+        "Yoda": "The wise and powerful Jedi master Yoda",
+        "Albert Einstein": "The genius physicist Albert Einstein",
+        "Napoleon Bonaparte": "The ambitious French military leader Napoleon Bonaparte",
+        "Count Dracula": "The bloodthirsty Romanian vampire Count Dracula",
+        "Mother Teresa": "The compassionate and selfless nun Mother Teresa",
+        "Mikhail Bakunin": "The Russian revolutionary anarchist Mikhail Bakunin",
+    },
+    "C": {
+        "Al Capone": "The ruthless and notorious gangster Al Capone",
+        "The Log Lady": "The mysterious Log Lady from Twin Peaks",
+        "MacGyver": "The resourceful and ingenious agent MacGyver",
+        "Confucius": "The wise and influential Chinese philosopher Confucius",
+        "Marie Curie": "The pioneering and brilliant scientist Marie Curie",
+        "The Terminator": "The Terminator cyborg played by Arnod Schwarzenegger",
+    },
 }
+
+# Set to True to let the model decide who is most willing to speak.
+# Set to False for faster deliberation
+INTELLIGENTLY_PICK_NEXT_SPEAKER = True
 
 
 @dataclass
@@ -60,7 +85,9 @@ class Agent:
     image_uri: str = ""
 
     def description_prompt(self, is_in_deliberation):
-        prompt = f"You are {self.description}. You are a member of a jury in a court case. "
+        prompt = (
+            f"You are {self.description}. You are a member of a jury in a court case. "
+        )
         if is_in_deliberation:
             prompt += "The jury is now in deliberation and no further evidence will be presented. You must now examine the evidence and argue your opinion and work towards a conclusive verdict."
         else:
@@ -102,12 +129,12 @@ Describe your opinion of your fellow jury member, {a.description}.
 Only base your opinion on their superficial appearence and mannerisms. Respond in only one or two words."""
             )
 
-    async def hear(self, utterance, is_in_deliberation, speaker: Optional["Agent"] = None):
+    async def hear(
+        self, utterance, is_in_deliberation, speaker: Optional["Agent"] = None
+    ):
         prompt = f"""{self.description_prompt(is_in_deliberation=is_in_deliberation)}
 
 {self.mood_prompt()}
-
-{self.beliefs_prompt()}
 
 """
         if speaker is None:
@@ -119,18 +146,24 @@ Only base your opinion on their superficial appearence and mannerisms. Respond i
                 ("INNOCENT_PERCENT", fuzzy_percent),
             ]
 
-            prompt += f"""The court says: {utterance}
+            prompt += f"""{self.beliefs_prompt()}
 
-You are {self.description}, describe your updated summary of all evidence (detailed), mood (one or two words), beliefs (reasoned and detailed), and certainty of guilt and innocence (percentages) in the following format:
+The court says: {utterance}
+
+You are {self.description}, in the signature voice of {self.name}, describe your updated summary of all evidence (detailed), mood (one word), beliefs (several bullet points), and certainty of guilt and innocence (percentages) in the following format:
 """
         else:
             prompt += f"""{self.agent_sentiments_prompt()}
 
+{self.beliefs_prompt()}
+
 {speaker.name} says: {utterance}
 
-You are {self.description}, given your current beliefs and what {speaker.name} said, describe your updated mood (one word), updated beliefs (reasoned and detailed), updated certainty of guilt and innocence (percentages), and updated opinion about the speaker {speaker.name} in the following format (do not output anything else):
+You are {self.description}, given your previous beliefs and what {speaker.name} said, in the signature voice of {self.description}, describe your updated mood (one word), new beliefs (several bullet points), updated certainty of guilt and innocence (percentages), and updated opinion about the speaker {speaker.name}'s views in relation to your own beliefs (concise) in the following format (do not output anything else):
 """
-            opinion_key = "OPINION_ABOUT_" + re.sub(r"[^A-Z]", "", speaker.name.upper().replace(" ", "_"))
+            opinion_key = "OPINION_ABOUT_" + re.sub(
+                r"[^A-Z ]", "", speaker.name.upper().replace(" ", "_")
+            )
             response_fields = [
                 ("MOOD", str),
                 ("BELIEFS", str),
@@ -161,7 +194,9 @@ You are {self.description}, given your current beliefs and what {speaker.name} s
         if old_mood != self.mood:
             self.image_uri = await make_image(self)
 
-    async def decide_to_speak(self, is_in_deliberation, previous_utterance, previous_speaker):
+    async def decide_to_speak(
+        self, is_in_deliberation, previous_utterance, previous_speaker
+    ):
         response_fields = [("SPEAK_EAGERNESS", fuzzy_percent)]
         prompt = f"""{self.description_prompt(is_in_deliberation)}
 
@@ -179,9 +214,7 @@ How eager are you to speak? Reply as a percentage in the following format:
 """
         parsed = await gen_formatted_response(prompt, response_fields)
         if parsed is None:
-            sys.stderr.write(
-                "Failed to parse speaking intent, tossing a coin\n"
-            )
+            sys.stderr.write("Failed to parse speaking intent, tossing a coin\n")
             sys.stderr.flush()
             speak_eagerness = random.choice(range(100))
         else:
@@ -193,13 +226,13 @@ How eager are you to speak? Reply as a percentage in the following format:
 
 {self.mood_prompt()}
 
-{self.beliefs_prompt()}
-
 {self.agent_sentiments_prompt()}
+
+{self.beliefs_prompt()}
 
 {previous_utterance_prompt(previous_utterance, previous_speaker)}
 
-You are {self.description}, what do you say? Be very concise and brief and argue based on known evidence and your beliefs. Only respond with the thing you're saying.
+You are {self.description}, what do you say? Be very concise and brief (a single sentence) and argue your opinion supported by known evidence. Only respond with the thing you're saying.
 """
         utterance = await gen(prompt)
         utterance = utterance.strip('"')
@@ -215,16 +248,31 @@ def previous_utterance_prompt(previous_utterance, previous_speaker):
     return ""
 
 
-def load_transcript():
+async def generate_transcript():
+    with open("transcript.txt") as f:
+        example_transcript1 = f.read()
     with open("transcript2.txt") as f:
-        text = f.read()
-    evidences = text.split("\n\n")
-    return evidences
+        example_transcript2 = f.read()
+    transcript = await gpt.generate(f"""Generate a fictional court case. The suspected crime should be something a bit funny and not violent. Not too cutesy though. Generate a court transcript where the attorney and the prosecutor both interrogate witnesses. Make the outcome of the case somewhat ambiguous. Include opening and closing statements by both attorney and prosecutor. Start with a name for the case and the name of the defendant. Make everything as short as possible.
+
+Split the transcript into blocks of 2-5 lines each, separated by newlines. Below are two examples of the form (but don't use the content of the examples, instead invent new stories):
+
+Example transcript 1:
+
+{example_transcript1}
+
+Example transcript 2:
+
+{example_transcript2}
+""")
+    return transcript.split("\n\n")
 
 
 async def summarize_verdict(agents):
     num_guilty = len([a for a in agents if a.guilty_percent - a.innocent_percent > 50])
-    num_innocent = len([a for a in agents if a.innocent_percent - a.guilty_percent > 50])
+    num_innocent = len(
+        [a for a in agents if a.innocent_percent - a.guilty_percent > 50]
+    )
     if num_innocent > num_guilty:
         verdict = "Not guilty"
     elif num_guilty > num_innocent:
@@ -232,7 +280,7 @@ async def summarize_verdict(agents):
     else:
         verdict = "Undecided"
 
-    prompt = f"""Summarize the beliefs of the members of the jury and end with the verdict {verdict}
+    prompt = f"""You are chairman of the jury. Summarize for the court the beliefs of the members of the jury without mentioning individual jurors and end with the verdict {verdict}.
 
 The beliefs of the jury are:
 """
@@ -263,9 +311,14 @@ def print_box(text):
 
 
 async def main():
-    db.init()
+    parser = argparse.ArgumentParser(description="Llama Jury")
+    parser.add_argument("room", help="Name of the court room", choices=["A", "B", "C", "D"])
+    args = parser.parse_args()
+    room = args.room
+    db.init(room)
 
-    agents = [Agent(name, description) for name, description in CHARACTERS.items()]
+    characters = ROOM_CHARACTERS[room]
+    agents = [Agent(name, description) for name, description in characters.items()]
 
     async with asyncio.TaskGroup() as tg:
         for agent in agents:
@@ -279,39 +332,61 @@ async def main():
             tg.create_task(agent.set_initial_mood())
 
     print_agents(agents)
-    db.save(agents=agents)
+    db.save(room, agents=agents, evidence="The court is being asesmbled...")
 
-    transcript = load_transcript()
+    transcript = await generate_transcript()
+    print("\n\n".join(transcript))
     for evidence in transcript:
         print_box(evidence)
-        db.save(evidence=evidence)
+        db.save(room, evidence=evidence)
         async with asyncio.TaskGroup() as tg:
             for agent in agents:
                 tg.create_task(agent.hear(evidence, is_in_deliberation=False))
 
         print_agents(agents)
-        db.save(agents=agents)
+        db.save(room, agents=agents)
 
     print_box("The jury now goes into deliberation")
-    db.save(evidence="")
+    db.save(room, evidence="The jury now goes into deliberation...")
+    has_cleared_evidence = False
 
     previous_utterance = previous_speaker = None
 
     for i in itertools.count(start=0, step=1):
-        async with asyncio.TaskGroup() as tg:
-            for agent in agents:
-                tg.create_task(agent.decide_to_speak(is_in_deliberation=True, previous_utterance=previous_utterance, previous_speaker=previous_speaker))
-
         other_agents = [a for a in agents if a != previous_speaker]
-        agent = random.choices(other_agents, weights=[a.speak_eagerness for a in other_agents], k=1)[0]
+        if INTELLIGENTLY_PICK_NEXT_SPEAKER:
+            async with asyncio.TaskGroup() as tg:
+                for agent in agents:
+                    tg.create_task(
+                        agent.decide_to_speak(
+                            is_in_deliberation=True,
+                            previous_utterance=previous_utterance,
+                            previous_speaker=previous_speaker,
+                        )
+                    )
 
-        utterance = await agent.say(is_in_deliberation=True, previous_utterance=previous_utterance, previous_speaker=previous_speaker)
+            agent = random.choices(
+                other_agents, weights=[a.speak_eagerness for a in other_agents], k=1
+            )[0]
+        else:
+            agent = random.choice(other_agents)
+
+        utterance = await agent.say(
+            is_in_deliberation=True,
+            previous_utterance=previous_utterance,
+            previous_speaker=previous_speaker,
+        )
         if previous_speaker:
             previous_speaker.latest_utterance = ""
         agent.latest_utterance = utterance
         for a in agents:
             a.latest_sentiment = ""
-        db.save(agents=agents)
+
+        if not has_cleared_evidence:
+            db.save(room, evidence="")
+            has_cleared_evidence = True
+
+        db.save(room, agents=agents)
 
         previous_utterance = utterance
         previous_speaker = agent
@@ -321,12 +396,14 @@ async def main():
         other_agents = [a for a in agents if a != agent]
         async with asyncio.TaskGroup() as tg:
             for a in other_agents:
-                tg.create_task(a.hear(is_in_deliberation=True, utterance=utterance, speaker=agent))
+                tg.create_task(
+                    a.hear(is_in_deliberation=True, utterance=utterance, speaker=agent)
+                )
 
         print_agents(agents)
-        db.save(agents=agents)
+        db.save(room, agents=agents)
 
-        if i >= 10:
+        if i >= 3:
             if all(a.is_certain() for a in agents):
                 break
 
@@ -339,7 +416,7 @@ async def main():
         a.latest_sentiment = ""
 
     print_box(verdict)
-    db.save(verdict=verdict)
+    db.save(room, agents=agents, verdict=verdict)
 
 
 if __name__ == "__main__":
