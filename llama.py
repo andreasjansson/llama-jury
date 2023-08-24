@@ -81,8 +81,8 @@ def fuzzy_percent(s):
         # If a match is found, convert the first group to an integer and return it
         return int(float(match.group(1)))
     else:
-        # If no match is found, return None
-        return None
+        # If no match is found, throw an error
+        raise ValueError()
 
 
 def response_format_prompt(fields):

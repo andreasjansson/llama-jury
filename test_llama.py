@@ -1,3 +1,4 @@
+import pytest
 from llama import parse_formatted_response, response_format_prompt, fuzzy_percent
 
 def test_parse_formatted_response():
@@ -130,5 +131,7 @@ def test_fuzzy_percent():
 
     i am more than 50 percent confident
     """) == 60
-    assert fuzzy_percent("") is None
-    assert fuzzy_percent("foo") is None
+    with pytest.raises(ValueError):
+        fuzzy_percent("")
+    with pytest.raises(ValueError):
+        fuzzy_percent("foo")
