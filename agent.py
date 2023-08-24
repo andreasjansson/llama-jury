@@ -205,6 +205,12 @@ How eager are you to speak? Reply as a percentage in the following format:
         return utterance
 
     def is_certain(self):
+        # There was a bug where fuzzy_percent returned None. This has polluted the database.
+        if self.guilty_percent is None:
+            self.guilty_percent = 50
+        if self.innocent_percent is None:
+            self.innocent_percent = 50
+
         return abs(self.guilty_percent - self.innocent_percent) > 50
 
     def previous_utterance_prompt(self, previous_utterance, previous_speaker):
