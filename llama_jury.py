@@ -49,6 +49,8 @@ ROOM_CHARACTERS = {
         "The Terminator": "The Terminator cyborg played by Arnod Schwarzenegger",
     },
 }
+for name, description in list(ROOM_CHARACTERS.items()):
+    ROOM_CHARACTERS["dev-" + name] = description
 
 # Set to True to let the model decide who is most willing to speak.
 # Set to False for faster deliberation
@@ -324,7 +326,7 @@ async def main():
     parser.add_argument(
         "rooms",
         help="Names of the court rooms",
-        choices=["A", "B", "C", "D"],
+        choices=["A", "B", "C", "dev-A", "dev-B", "dev-C"],
         nargs="+",
     )
     args = parser.parse_args()
