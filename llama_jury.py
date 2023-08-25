@@ -79,7 +79,7 @@ async def generate_transcript():
     transcript = await gpt.generate(
         f"""Generate a fictional court case. The suspected crime should be something a bit funny and not violent. Not too cutesy though. Generate a court transcript where the attorney and the prosecutor both interrogate witnesses. Make the outcome of the case somewhat ambiguous. Include opening and closing statements by both attorney and prosecutor. Start with a name for the case and the name of the defendant. Make everything as short as possible.
 
-Split the transcript into blocks of 2-5 lines each, separated by newlines. Below are two examples of the form (but don't use the content of the examples, instead invent new stories):
+Split the transcript into blocks of 2-5 lines each, separated by newlines. Below are two examples of the form (but don't use the content of the examples, instead invent a completely new story line. Feel free to include strange bits of evidence, drawing inspiration from science fiction, detective stories, gangster movies, historical events, etc.):
 
 Example transcript 1:
 
