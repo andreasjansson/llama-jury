@@ -203,19 +203,19 @@ async def initialize_agents(state):
 
     print_agents(state.agents)
     state.evidence = INITIAL_EVIDENCE
-    state.save("agents", "evidence")
+    state.save()
 
 
 async def initialize_transcript(state):
     transcript = await generate_transcript()
     state.transcript = transcript
-    state.save("transcript")
+    state.save_transcript(transcript)
 
 
 async def next_evidence(state):
     state.evidence = state.next_evidence()
     print_box(state.evidence)
-    state.save("evidence")
+    state.save()
     if state.evidence == DELIBERATION_EVIDENCE:
         return
 
@@ -224,7 +224,7 @@ async def next_evidence(state):
             tg.create_task(agent.hear(state.evidence, is_in_deliberation=False))
 
     print_agents(state.agents)
-    state.save("agents")
+    state.save()
 
 
 async def next_utterance(state):
@@ -261,9 +261,8 @@ async def next_utterance(state):
 
     if state.evidence != "":
         state.evidence = ""
-        state.save("evidence")
 
-    state.save("agents")
+    state.save()
     print_box(f"\n{agent.name} says: {utterance}\n")
 
 
@@ -276,7 +275,7 @@ async def next_sentiment(state):
             )
 
     print_agents(state.agents)
-    state.save("agents")
+    state.save()
     state.num_deliberation_steps += 1
 
 
@@ -290,7 +289,7 @@ async def create_verdict(state):
         a.latest_sentiment = ""
 
     print_box(state.verdict)
-    state.save("agents", "verdict")
+    state.save()
 
 
 if __name__ == "__main__":

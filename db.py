@@ -25,35 +25,33 @@ class DatabaseSession:
         print(f"Starting case {case_id} in room {room}")
         return case_id
 
-    def save(
-        self, room, case_id, agents=None, evidence=None, verdict=None, transcript=None
-    ):
+    def save_state(self, state):
         if self.client is None:
             return
 
-        if agents is not None:
-            state = []
-            for a in agents:
-                state.append(dataclasses.asdict(a))
-            self.client.table("agents_state").insert(
-                {"case_id": case_id, "state": state, "room": room}
-            ).execute()
+        agent_dicts = None
+        if state.agents is not None:
+            agent_dicts = []
+            for a in state.agents:
+                agent_dicts.append(dataclasses.asdict(a))
 
-        if evidence is not None:
-            self.client.table("evidence").insert(
-                {"case_id": case_id, "text": evidence, "room": room}
-            ).execute()
+        self.client.table("state").insert(
+            {
+                "case_id": state.case_id,
+                "room": state.room,
+                "evidence": state.evidence,
+                "agents": agent_dicts,
+                "verdict": state.verdict,
+            }
+        ).execute()
 
-        if verdict is not None:
-            self.client.table("verdict").insert(
-                {"case_id": case_id, "text": verdict, "room": room}
-            ).execute()
+    def save_transcript(self, case_id, transcript):
+        if self.client is None:
+            return
 
-        if transcript is not None:
-            self.client.table("case").update({"transcript": transcript}).eq(
-                "id", case_id
-            ).execute()
-
+        self.client.table("case").update({"transcript": transcript}).eq(
+            "id", case_id
+        ).execute()
 
     async def load_latest(self, room):
         if self.client is None:
@@ -76,59 +74,31 @@ class DatabaseSession:
         case_id = latest_case["id"]
         transcript = latest_case["transcript"]
 
-        # Initialize empty dictionaries to hold the latest agents_state, evidence, and verdict
-        latest_agents = None
-        latest_evidence = None
-        latest_verdict = None
-
-        # Fetch the latest agents_state
-        agents_state_result = (
-            self.client.table("agents_state")
+        state_result = (
+            self.client.table("state")
             .select("*")
             .eq("case_id", case_id)
             .order("created_at", desc=True)
             .limit(1)
             .execute()
         )
+        if len(state_result.data) == 0:
+            return case_id, None, None, None, transcript
 
-        if len(agents_state_result.data) > 0:
-            latest_agents_state = agents_state_result.data[0]
-            latest_agents = []
-            if latest_agents_state and "state" in latest_agents_state:
-                for agent_dict in latest_agents_state["state"]:
-                    agent = Agent(**agent_dict)
-                    latest_agents.append(agent)
+        state = state_result.data[0]
+        agent_dicts = state["agents"]
+        agents = None
 
-        # Fetch the latest evidence
-        evidence_result = (
-            self.client.table("evidence")
-            .select("*")
-            .eq("case_id", case_id)
-            .order("created_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-
-        if len(evidence_result.data) > 0:
-            latest_evidence = evidence_result.data[0]['text']
-
-        # Fetch the latest verdict
-        verdict_result = (
-            self.client.table("verdict")
-            .select("*")
-            .eq("case_id", case_id)
-            .order("created_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-
-        if len(verdict_result.data) > 0:
-            latest_verdict = verdict_result.data[0]['text']
+        if agent_dicts:
+            agents = []
+            for agent_dict in agent_dicts:
+                agent = Agent(**agent_dict)
+                agents.append(agent)
 
         return (
             case_id,
-            latest_agents,
-            latest_evidence,
-            latest_verdict,
+            agents,
+            state["evidence"],
+            state["verdict"],
             transcript,
         )

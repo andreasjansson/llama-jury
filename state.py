@@ -59,15 +59,19 @@ class State:
         return State.INVALID
 
     def has_latest_sentiment(self):
+        assert self.agents
         return any(a.latest_sentiment for a in self.agents)
 
     def has_latest_utterance(self):
+        assert self.agents
         return any(a.latest_utterance for a in self.agents)
 
     def all_jurors_are_certain(self):
+        assert self.agents
         return all(a.is_certain() for a in self.agents)
 
     def next_evidence(self):
+        assert self.transcript
         sections = self.transcript.split("\n\n")
         if self.evidence == INITIAL_EVIDENCE:
             return sections[0]
@@ -78,6 +82,7 @@ class State:
         return sections[index + 1]
 
     def previous_speaker(self):
+        assert self.agents
         lst = [a for a in self.agents if a.latest_utterance]
         if lst:
             return lst[0]
@@ -89,17 +94,11 @@ class State:
             return None
         return speaker.latest_utterance
 
-    def save(self, *properties):
-        kwargs = {}
-        if "agents" in properties:
-            kwargs["agents"] = self.agents
-        if "evidence" in properties:
-            kwargs["evidence"] = self.evidence
-        if "verdict" in properties:
-            kwargs["verdict"] = self.verdict
-        if "transcript" in properties:
-            kwargs["transcript"] = self.transcript
-        self.db.save(self.room, self.case_id, **kwargs)
+    def save(self):
+        self.db.save_state(self)
+
+    def save_transcript(self, transcript):
+        self.db.save_transcript(self.case_id, transcript)
 
     def reset_with_new_case(self):
         case_id = self.db.create_case(self.room)
