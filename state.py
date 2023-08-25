@@ -45,9 +45,8 @@ class State:
             DELIBERATION_EVIDENCE,
         ):
             return State.PRESENTING_EVIDENCE
-        if (
-            self.verdict is None
-            and (self.all_jurors_are_certain() and self.num_deliberation_steps > 3)
+        if self.verdict is None and (
+            (self.all_jurors_are_certain() and self.num_deliberation_steps > 3)
             or self.num_deliberation_steps > 100
         ):
             return State.AWAITING_VERDICT

@@ -49,12 +49,12 @@ ROOM_CHARACTERS = {
         "Lieutenant Worf": "The Klingon Lieutenant Worf from Star Trek TNG",
     },
     "dev-B": {
-        "Yoda": "The wise and powerful Jedi master Yoda",
-        "Albert Einstein": "The genius physicist Albert Einstein",
+#        "Yoda": "The wise and powerful Jedi master Yoda",
+#        "Albert Einstein": "The genius physicist Albert Einstein",
         "Napoleon Bonaparte": "The ambitious French military leader Napoleon Bonaparte",
         "Count Dracula": "The bloodthirsty Romanian vampire Count Dracula",
-        "Mother Teresa": "The compassionate and selfless nun Mother Teresa",
-        "Mikhail Bakunin": "The Russian revolutionary anarchist Mikhail Bakunin",
+#        "Mother Teresa": "The compassionate and selfless nun Mother Teresa",
+#        "Mikhail Bakunin": "The Russian revolutionary anarchist Mikhail Bakunin",
     },
     "dev-C": {
         "Al Capone": "The ruthless and notorious gangster Al Capone",
@@ -170,7 +170,7 @@ async def run_court(room):
             case state.AWAITING_VERDICT:
                 await create_verdict(state)
             case state.COMPLETE:
-                time.sleep(20)
+                time.sleep(30)
                 await new_case(state)
             case state.INVALID:
                 sys.stderr.write("Invalid state!\n")
