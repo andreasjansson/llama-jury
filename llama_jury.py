@@ -105,9 +105,7 @@ async def summarize_verdict(agents):
     else:
         verdict = "Undecided"
 
-    prompt = f"""You are chairman of the jury. Summarize for the court the beliefs of the members of the jury without mentioning individual jurors and end with the verdict {verdict}.
-
-The beliefs of the jury are:
+    prompt = f"""You are chairman of the jury. Briefly summarize for the court the beliefs of the members of the jury (without mentioning individual jurors and end with the verdict {verdict}).
 """
     for agent in agents:
         prompt += f"* {agent.name}: {agent.beliefs}\n"
@@ -283,7 +281,6 @@ async def next_sentiment(state):
 
 
 async def create_verdict(state):
-
     print_box("The jury has reached it's verdict")
 
     state.verdict = await summarize_verdict(state.agents)
