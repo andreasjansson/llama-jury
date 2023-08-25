@@ -177,7 +177,7 @@ How eager are you to speak? Reply as a percentage in the following format:
 
 {response_format_prompt(response_fields)}
 """
-        parsed = await gen_formatted_response(prompt, response_fields)
+        parsed = await gen_formatted_response(prompt, response_fields, max_length=30)
         if parsed is None:
             sys.stderr.write("Failed to parse speaking intent, tossing a coin\n")
             sys.stderr.flush()
@@ -196,11 +196,12 @@ How eager are you to speak? Reply as a percentage in the following format:
 {self.beliefs_prompt()}
 
 {self.previous_utterance_prompt(previous_utterance, previous_speaker)}
+
 """
         if previous_speaker:
-            prompt += f"You are {self.description}, reply to {previous_speaker.name} in your distinctive voice. Argue for your beliefs mentioning specific evidence in one short sentence."
+            prompt += f"You are {self.name}. In your distinctive voice argue your evidence-based opinion in reply to {previous_speaker.name} in a single short sentence."
         else:
-            prompt += f"You are {self.description}. Try to convince the jury about your opinions in your distinctive voice. Be brief (one or two sentences). Argue for your beliefs mentioning specific evidence."
+            prompt += f"You are {self.name}. Try to convince the jury about your opinions in your distinctive voice. Be brief (one or two sentences). Argue for your beliefs mentioning specific evidence."
 
         utterance = await gen(prompt)
         utterance = utterance.strip('"')
